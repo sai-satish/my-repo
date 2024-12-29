@@ -49,6 +49,10 @@ dependencies:
   flutter_map_tile_caching:
   cloud_firestore:
   flutter_dotenv: ^5.2.1
+  flutter_screenutil:
+  geocoding:
+  http:
+  google_maps_flutter:
 
 
 dev_dependencies:

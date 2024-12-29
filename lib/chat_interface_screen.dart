@@ -16,18 +16,18 @@ class ChatInterfaceScreen extends StatefulWidget {
 
 class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
   final TextEditingController _messageController = TextEditingController();
-  String currentUserEmail = '';  // Initialize the email variable
+  String currentUserEmail = '';
 
   @override
   void initState() {
     super.initState();
-    initializeFields();  // Initialize fields when the widget is loaded
+    initializeFields();
   }
 
   Future<void> initializeFields() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      currentUserEmail = prefs.getString('currentUserEmail') ?? '';  // Set email value
+      currentUserEmail = prefs.getString('currentUserEmail') ?? '';
     });
   }
 
@@ -115,10 +115,16 @@ class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isGroup ? 'Group Chat' : 'Chat'),
-        actions: [widget.isGroup ? IconButton(onPressed: _addMembersToGroup, icon: Icon(Icons.add)) : SizedBox.shrink()],
+        actions: [
+          widget.isGroup
+              ? IconButton(onPressed: _addMembersToGroup, icon: const Icon(Icons.add))
+              : const SizedBox.shrink(),
+        ],
       ),
       body: Column(
         children: [
@@ -128,33 +134,37 @@ class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
                   .collection(widget.isGroup ? 'groups' : 'chats')
                   .doc(widget.chatId)
                   .collection('messages')
-                  .orderBy('timestamp', descending: false) // No reverse sorting
+                  .orderBy('timestamp', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator()); // Loading state
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}')); // Error state
+                  return Center(child: Text('Error: ${snapshot.error}'));
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No messages yet')); // No messages state
+                  return const Center(child: Text('No messages yet'));
                 }
 
                 final messages = snapshot.data!.docs;
-
-                // Group messages by date
                 Map<String, List<QueryDocumentSnapshot>> groupedMessages = {};
                 for (var message in messages) {
-                  final timestamp = (message['timestamp'] as Timestamp).toDate();
-                  final formattedDate = formatDate(timestamp);
+                  // Safely check if the 'timestamp' exists and is not null
+                  final timestamp = message['timestamp'];
+                  if (timestamp != null) {
+                    final timestampDate = (timestamp is Timestamp)
+                        ? timestamp.toDate()
+                        : DateTime.now(); // Fallback to current date if timestamp is invalid or missing
+                    final formattedDate = formatDate(timestampDate);
 
-                  if (!groupedMessages.containsKey(formattedDate)) {
-                    groupedMessages[formattedDate] = [];
+                    if (!groupedMessages.containsKey(formattedDate)) {
+                      groupedMessages[formattedDate] = [];
+                    }
+                    groupedMessages[formattedDate]!.add(message);
                   }
-                  groupedMessages[formattedDate]!.add(message);
                 }
 
                 return ListView.builder(
@@ -171,14 +181,19 @@ class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
                           child: Center(
                             child: Text(
                               date,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Theme.of(context).primaryColor.withOpacity(0.6),
+                              ),
                             ),
                           ),
                         ),
                         ...dateMessages.map((message) {
                           final isCurrentUser = message['sender'] == currentUserEmail;
-                          final timestamp = (message['timestamp'] as Timestamp).toDate();
-                          final formattedTime = DateFormat('hh:mm a').format(timestamp);
+                          final timestamp = message['timestamp'];
+                          final timestampDate = (timestamp is Timestamp) ? timestamp.toDate() : DateTime.now();
+                          final formattedTime = DateFormat('hh:mm a').format(timestampDate);
 
                           return Align(
                             alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -186,21 +201,15 @@ class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
                               margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: isCurrentUser ? Colors.blue : Colors.grey,
+                                color: isCurrentUser ? Theme.of(context).primaryColor : Theme.of(context).secondaryHeaderColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Column(
                                 crossAxisAlignment: isCurrentUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    message['content'],
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
+                                  Text(message['content'], style: isCurrentUser ? Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54) : Theme.of(context).textTheme.bodyMedium),
                                   SizedBox(height: 5),
-                                  Text(
-                                    formattedTime,
-                                    style: TextStyle(color: Colors.white, fontSize: 10),
-                                  ),
+                                  Text(formattedTime, style: isCurrentUser ? Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54) : Theme.of(context).textTheme.bodyMedium),
                                 ],
                               ),
                             ),
@@ -214,16 +223,12 @@ class _ChatInterfaceScreenState extends State<ChatInterfaceScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: screenSize.width < 600 ? 10 : 20),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      border: InputBorder.none,
-                    ),
                   ),
                 ),
                 IconButton(

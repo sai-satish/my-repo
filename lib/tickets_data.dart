@@ -1,5 +1,6 @@
 final List<Map<String, String>> tickets = [
   {
+    "currentUserEmail": "satish@gmail.com",
     "startDate": "Sep 20",
     "startTime": "09:50",
     "endDate": "Sep 21",
@@ -11,6 +12,7 @@ final List<Map<String, String>> tickets = [
     "imagePath": "assets/images/flight_icon.png",
   },
   {
+  "currentUserEmail": "satish@gmail.com",
     "startDate": "Sep 25",
     "startTime": "08:00",
     "endDate": "Sep 25",
@@ -22,6 +24,7 @@ final List<Map<String, String>> tickets = [
     "imagePath": "assets/images/train_icon.png",
   },
   {
+  "currentUserEmail": "satish1@gmail.com",
     "startDate": "Sep 28",
     "startTime": "07:15",
     "endDate": "Sep 28",

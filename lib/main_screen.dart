@@ -1,12 +1,17 @@
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:trip_swift/secrets.dart';
+import 'chat_screen.dart';
 import 'package:trip_swift/home_page.dart';
-import 'package:trip_swift/previoustrips_screens.dart';
-import 'package:trip_swift/profile.dart';
 import 'package:trip_swift/suggest_trips.dart';
 import 'package:trip_swift/testing_features/maps_osm.dart';
 import 'package:trip_swift/upcoming_schedule.dart';
-
-import 'chat_screen.dart';
+import 'package:trip_swift/previoustrips_screens.dart';
+import 'package:trip_swift/profile.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,7 +39,99 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  String _selectedStatus = "Free"; // Default status
+  String _selectedStatus = "Free";
+  String _location = "New York, USA";
+  String _temperature = "22°C";
+
+  // Function to fetch the current location
+  Future<Position> getCurrentLocation() async {
+    LocationPermission permission = await Geolocator.requestPermission();
+
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      // Show Snackbar if permission is denied
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Location permission denied. Please enable it in settings.")),
+      );
+      throw Exception("Location permission denied");
+    }
+
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+    return position;
+  }
+
+  // Function to get the place name based on coordinates
+  Future<String> getPlaceName(double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark placemark = placemarks.first;
+        return '${placemark.locality}';
+      } else {
+        return '?'; // Return a default value if no placemark is found
+      }
+    } catch (e) {
+      print('Error getting place name: $e');
+      return 'Error'; // Return an error message
+    }
+  }
+
+  // Function to fetch weather data based on coordinates
+  Future<Map<String, dynamic>> getWeather(double latitude, double longitude) async {
+    String apiKey = OPENWEATHERMAP_API_KEY;  // Replace with your OpenWeatherMap API key
+    String url = 'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric';
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body); // Return weather data in JSON format
+    } else {
+      throw Exception('Failed to load weather');
+    }
+  }
+
+  // Function to update the location and weather data in the app
+  Future<void> updateLocationAndWeather() async {
+    try {
+      Position position = await getCurrentLocation();
+      print("Current Location fetched properly lat:${position.latitude} long:${position.longitude}");
+      // String placeName = await getPlaceName(position.latitude, position.longitude);
+      // var placeName = await http.get(Uri.parse(
+      //     'https://photon.komoot.io/reverse?lat=${position.latitude}&lon=${position.longitude}'));
+
+      // Handle potential errors from getPlaceName
+      // if (placeName == 'Error') {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(content: Text("Error fetching place name. Please try again.")),
+      //   );
+      //   // return;
+      // }
+
+
+      Map<String, dynamic> weather = await getWeather(position.latitude, position.longitude);
+      print("Weather fetched: $weather");
+
+      // var jsonResponse = json.decode(weather);
+      // print("PlaceName json: $jsonResponse");
+
+
+      setState(() async {
+        _location = weather["name"];
+        _temperature = weather["temp"];
+
+      });
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to fetch location or weather. Please try again.")),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    updateLocationAndWeather();  // Fetch location and weather when the app starts
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -42,54 +139,64 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Update status
   void _updateStatus(String? value) {
     setState(() {
-      _selectedStatus = value ?? "Free"; // Update the status if it's changed
+      _selectedStatus = value ?? "Free";
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    Future<List<Map<String, dynamic>>> fetchTickets() async {
+      try {
+        QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('tickets').get();
+        List<Map<String, dynamic>> ticketsList = [];
+        for (var doc in snapshot.docs) {
+          ticketsList.add(doc.data() as Map<String, dynamic>);
+        }
+        return ticketsList;
+      } catch (e) {
+        throw Exception("Error fetching tickets: $e");
+      }
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF131617),
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer(); // Open the drawer
-            },
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        actions: [Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "John Doe", // Placeholder for the username
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 5),
-            Row(
+        title: const Text(
+          'Trip Swift',
+          style: TextStyle(color: Color(0xFF22DD85)),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.location_on, size: 16, color: Color(0xFF22DD85)),
-                SizedBox(width: 5),
-                Text(
-                  "New York, USA", // Placeholder for the location
-                  style: TextStyle(fontSize: 14),
+                const Text(
+                  "John Doe",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
-                SizedBox(width: 10),
-                Text(
-                  "22°C", // Placeholder for the temperature
-                  style: TextStyle(fontSize: 14),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 16, color: Color(0xFF22DD85)),
+                    SizedBox(width: 5),
+                    Text(_location, style: const TextStyle(fontSize: 14)),
+                    SizedBox(width: 10),
+                    Text(_temperature, style: const TextStyle(fontSize: 14)),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),],
-        title: Text('Trip Swift',
-        style: TextStyle(color: Color(0xFF22DD85),),),
-        centerTitle: true,
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -130,39 +237,31 @@ class _MainScreenState extends State<MainScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Profile Section
-            ListTile(
-              leading: const CircleAvatar(
-                radius: 40, // Increased size for profile photo
-                backgroundColor: Color(0xFF22DD85),
-                child: Icon(Icons.person, color: Colors.white, size: 40),
-              ),
-              title: const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: Text(
-                  "John Doe", // Placeholder for username
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
+            GestureDetector(
               onTap: () {
-                // Navigate to Profile Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ProfileScreen()),
                 );
               },
+              child: UserAccountsDrawerHeader(
+                decoration: const BoxDecoration(color: Color(0xFF131617)),
+                accountName: const Text(
+                  "John Doe",
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+                accountEmail: null,
+                currentAccountPicture: const CircleAvatar(
+                  backgroundColor: Color(0xFF22DD85),
+                  child: Icon(Icons.person, color: Colors.white, size: 40),
+                ),
+              ),
             ),
-            const Divider(color: Colors.white),
-
-            // Set Status Dropdown (with styled dropdown)
             ListTile(
               leading: const Icon(Icons.account_circle, color: Color(0xFF22DD85)),
               title: DropdownButton<String>(
                 isExpanded: true,
-                value: _selectedStatus, // Current status value
+                value: _selectedStatus,
                 items: const [
                   DropdownMenuItem(
                     child: Text("Free", style: TextStyle(color: Colors.white)),
@@ -177,18 +276,12 @@ class _MainScreenState extends State<MainScreen> {
                     value: "At Work",
                   ),
                 ],
-                onChanged: _updateStatus, // Call the update function
-                hint: const Text(
-                  "Select Status",
-                  style: TextStyle(color: Colors.white70),
-                ),
-                dropdownColor: const Color(0xFF131617), // Dark background for dropdown
-                style: const TextStyle(color: Colors.white), // White text for dropdown
+                onChanged: _updateStatus,
+                dropdownColor: const Color(0xFF131617),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
             const Divider(color: Colors.white),
-
-            // Upcoming Schedule
             ListTile(
               leading: const Icon(Icons.calendar_today, color: Color(0xFF22DD85)),
               title: const Text(
@@ -196,7 +289,6 @@ class _MainScreenState extends State<MainScreen> {
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
-                // Navigate to Upcoming Schedule Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => UpcomingScheduleScreen()),
@@ -204,8 +296,6 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
             const Divider(color: Colors.white),
-
-            // Previous Trips
             ListTile(
               leading: const Icon(Icons.trip_origin, color: Color(0xFF22DD85)),
               title: const Text(
@@ -213,12 +303,20 @@ class _MainScreenState extends State<MainScreen> {
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
-                // Navigate to Previous Trips Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => PreviousTripsScreen()),
                 );
               },
+            ),
+            const Divider(color: Colors.white),
+            ListTile(
+              leading: const Icon(Icons.refresh, color: Color(0xFF22DD85)),
+              title: const Text(
+                "Refresh Location & Weather",
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: updateLocationAndWeather,  // Refresh on tap
             ),
           ],
         ),
@@ -226,17 +324,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-
-// Profile Screen (Placeholder)
-// class ProfileScreen extends StatelessWidget {
-//   const ProfileScreen({Key? key}) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text("Profile")),
-//       body: const Center(child: Text("Profile Screen")),
-//     );
-//   }
-// }
-

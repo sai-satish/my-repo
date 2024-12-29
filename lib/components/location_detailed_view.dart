@@ -2,13 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:trip_swift/components/photo_grid.dart';
 import 'package:trip_swift/components/review_input.dart';
+// import 'package:trip_swift/theme/theme.dart';  // Assuming you have a custom theme file
 
 class LocationDetailScreen extends StatefulWidget {
-  final String documentId; // Pass the document ID to fetch data
+  final String documentId;
 
   const LocationDetailScreen({
     Key? key,
-    required this.documentId, // Document ID passed to fetch location data
+    required this.documentId,
   }) : super(key: key);
 
   @override
@@ -17,54 +18,49 @@ class LocationDetailScreen extends StatefulWidget {
 
 class _LocationDetailScreenState extends State<LocationDetailScreen> {
   int _currentIndex = 0;
+  final List<String> _tabs = ["Overview", "Photo", "Review", "Places Nearby"];
+  List<String> _photos = [];
+  List<Map<String, dynamic>> _reviews = [];
 
-  final List<String> _tabs = ["Overview", "Photo", "Review", "Community"];
-  List<String> _photos = []; // List to hold photo URLs
-  List<Map<String, dynamic>> _reviews = []; // List to hold reviews
-
-  bool _isLoading = true; // State to manage loading indicator
-
-  late Map<String, dynamic> _locationData; // Holds location data
-
+  bool _isLoading = true;
+  Map<String, dynamic>? _locationData; // Make it nullable
   bool _isLiked = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLocationData(); // Load location data when the screen is initialized
+    _loadLocationData();
   }
 
-  // Fetch location data from Firestore using the document ID
   Future<void> _loadLocationData() async {
     try {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance
           .collection('locations')
-          .doc(widget.documentId) // Fetch the location using the document ID
+          .doc(widget.documentId)
           .get();
 
       if (snapshot.exists) {
         setState(() {
-          _locationData = snapshot.data() as Map<String, dynamic>;
+          _locationData = snapshot.data() as Map<String, dynamic>?;
           _isLoading = false;
         });
-        _fetchPhotos(); // Fetch photos after location data is loaded
-        _fetchReviews(); // Fetch reviews after location data is loaded
+        _fetchPhotos();
+        _fetchReviews();
       } else {
-        // Handle error if document does not exist
         setState(() {
           _isLoading = false;
         });
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text("Error"),
-            content: Text("Location not found."),
+            title: const Text("Error"),
+            content: const Text("Location not found."),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text("OK"),
+                child: const Text("OK"),
               ),
             ],
           ),
@@ -74,22 +70,20 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
       setState(() {
         _isLoading = false;
       });
-      // Handle error
       print("Error fetching location data: $e");
     }
   }
 
-  // Fetch photos from Firestore (assuming photos are stored as URLs or paths in the document)
   Future<void> _fetchPhotos() async {
     try {
       QuerySnapshot photoSnapshot = await FirebaseFirestore.instance
           .collection('locations')
           .doc(widget.documentId)
-          .collection('photos') // Assuming photos are in a subcollection 'photos'
+          .collection('photos')
           .get();
 
       List<String> photoUrls = photoSnapshot.docs
-          .map((doc) => doc['url'] as String) // Assuming each photo document has a 'url' field
+          .map((doc) => doc['url'] as String)
           .toList();
 
       setState(() {
@@ -100,19 +94,18 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
     }
   }
 
-  // Fetch reviews from Firestore (assuming reviews are stored in a subcollection 'reviews')
   Future<void> _fetchReviews() async {
     try {
       QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
           .collection('locations')
           .doc(widget.documentId)
-          .collection('reviews') // Assuming reviews are in a subcollection 'reviews'
+          .collection('reviews')
           .get();
 
       List<Map<String, dynamic>> reviews = reviewSnapshot.docs
           .map((doc) {
         return {
-          'name': doc['name'] ?? 'Anonymous', // Assuming reviews have 'name' and 'comment' fields
+          'name': doc['name'] ?? 'Anonymous',
           'rating': doc['rating'] ?? 0.0,
           'comment': doc['comment'] ?? 'No comment',
         };
@@ -162,6 +155,10 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
   }
 
   Widget _buildOverviewSection() {
+    if (_locationData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -169,17 +166,17 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
         children: [
           Text(
             "About",
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
-            _locationData['description'] ?? 'No description available',
+            _locationData?['description'] ?? 'No description available',
             style: TextStyle(color: Colors.grey[400], fontSize: 14),
           ),
           const SizedBox(height: 16),
-          _buildInfoRow("Opening hours", _locationData['opening_hours'] ?? 'N/A', Colors.greenAccent),
-          _buildInfoRow("Type", _locationData['type'] ?? 'N/A', Colors.blueAccent),
-          _buildInfoRow("Price", _locationData['price'] ?? 'N/A', Colors.amber),
+          _buildInfoRow("Opening hours", _locationData?['opening_hours'] ?? 'N/A', Colors.greenAccent),
+          _buildInfoRow("Type", _locationData?['type'] ?? 'N/A', Colors.blueAccent),
+          _buildInfoRow("Price", _locationData?['price'] ?? 'N/A', Colors.amber),
         ],
       ),
     );
@@ -213,7 +210,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
             itemBuilder: (context, index) {
               final review = reviews[index];
               return ListTile(
-                title: Text(review['name'], style: const TextStyle(color: Colors.white)),
+                title: Text(review['name'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white)),
                 subtitle: Text(review['comment'], style: TextStyle(color: Colors.grey[400])),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -232,8 +229,20 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    double screenHeight = screenSize.height;
+    double screenWidth = screenSize.width;
+
+    if (_locationData == null) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: const Center(child: CircularProgressIndicator(color: Colors.green,)), // Circular indicator while data is being fetched
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
+
       body: SafeArea(
         child: Column(
           children: [
@@ -241,18 +250,18 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
             Stack(
               children: [
                 _isLoading
-                    ? const SizedBox.shrink()
+                    ? const Center(child: CircularProgressIndicator()) // Loading indicator while the image is fetched
                     : Image.network(
-                  _locationData['image'] ?? '',
-                  height: 250,
-                  width: double.infinity,
+                  _locationData?['image'] ?? '',
+                  height: screenHeight * 0.3, // Adaptive image height
+                  width: screenWidth, // Use full width
                   fit: BoxFit.cover,
                 ),
                 Positioned(
                   top: 16,
                   left: 16,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -285,13 +294,14 @@ class _LocationDetailScreenState extends State<LocationDetailScreen> {
                           style: TextStyle(
                             color: _currentIndex == index ? Colors.white : Colors.grey,
                             fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04, // Adaptive font size
                           ),
                         ),
                         if (_currentIndex == index)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
                             height: 2,
-                            width: 40,
+                            width: screenWidth * 0.1, // Responsive width for indicator
                             color: Colors.amber,
                           ),
                       ],

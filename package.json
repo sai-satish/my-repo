@@ -1,0 +1,22 @@
+{
+  "name": "trip_swift",
+  "version": "1.0.0",
+  "description": "**Welcome to TripSwift!**\r TripSwift is a smart travel app designed to help users make the most of their vacations, especially when time is limited. With real-time itinerary management, group planning, offline access, and in-depth cultural insights, TripSwift adapts to the needs of individuals and groups for seamless, immersive travel experiences. The app integrates features like Google OAuth for secure authentication, Firebase Firestore for data storage, and offline map capabilities to ensure a smooth journey, even without an internet connection. Collaborate with friends, customize your trips, and gain valuable insights about each destination with TripSwift.",
+  "main": "node_server.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

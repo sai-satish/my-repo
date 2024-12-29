@@ -78,6 +78,16 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
+
+    // Calculate responsive dimensions
+    double imageHeight = screenSize.height * 0.6;
+    double progressBarHeight = screenSize.height * 0.01; // Progress bar height
+    double paddingHorizontal = screenSize.width * 0.05;
+    double fontSizeLocationName = screenSize.width * 0.05; // Responsive font size
+    double fontSizeDate = screenSize.width * 0.04; // Responsive font size
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -92,7 +102,7 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
                 widget.imageUrls[index],
                 fit: BoxFit.cover,
                 width: double.infinity,
-                height: double.infinity,
+                height: imageHeight, // Adjust image height for responsiveness
               );
             },
           ),
@@ -103,7 +113,7 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
               children: [
                 // Linear Progress Indicators
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: EdgeInsets.symmetric(horizontal: screenSize.width * 0.03),
                   child: Row(
                     children: List.generate(widget.imageUrls.length, (index) {
                       return Expanded(
@@ -125,12 +135,11 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
                     }),
                   ),
                 ),
-
-                const SizedBox(height: 8.0), // Small spacing
+                SizedBox(height: progressBarHeight), // Small spacing
 
                 // Location Name
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -140,18 +149,18 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
                         children: [
                           Text(
                             widget.locationName,
-                            style: const TextStyle(
+                            style: theme.textTheme.headlineMedium?.copyWith(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: fontSizeLocationName,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4.0),
                           Text(
                             "${widget.visitDate.toLocal()}".split(' ')[0], // Format Date
-                            style: const TextStyle(
+                            style: theme.textTheme.headlineSmall?.copyWith(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: fontSizeDate,
                             ),
                           ),
                         ],
@@ -180,28 +189,10 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
           // Tap Zones to Move Forward/Backward
           Stack(
             children: [
-              // Close Button at the Top-Right
-              Positioned(
-                top: 12,
-                right: 12,
-                child: SafeArea(
-                  child: IgnorePointer(
-                    // Ignore GestureDetector taps here
-                    ignoring: false,
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                    ),
-                  ),
-                ),
-              ),
-
               // GestureDetector for Navigation (Excluding Close Button)
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 60.0), // Exclude top area with close button
+                  padding: EdgeInsets.only(top: screenSize.height * 0.07), // Exclude top area with close button
                   child: GestureDetector(
                     onTapUp: (details) {
                       final screenWidth = MediaQuery.of(context).size.width;
@@ -218,7 +209,6 @@ class _HighlightsScreenState extends State<HighlightsScreen> {
               ),
             ],
           ),
-
         ],
       ),
     );

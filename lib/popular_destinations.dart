@@ -8,9 +8,8 @@ class PopularDestinationsScreen extends StatelessWidget {
 
   Future<List<Map<String, dynamic>>> fetchHighlights() async {
     try {
-      // Fetch data from Firestore (assuming the collection is named 'highlights')
-      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection(
-          'locations').get();
+      // Fetch data from Firestore (assuming the collection is named 'locations')
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('locations').get();
 
       // Map the data into a list of maps
       List<Map<String, dynamic>> highlights = snapshot.docs.map((doc) {
@@ -33,13 +32,16 @@ class PopularDestinationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
+        title: Text(
           "Popular Destinations",
-          style: TextStyle(color: Colors.white),
+          style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -54,38 +56,46 @@ class PopularDestinationsScreen extends StatelessWidget {
           } else {
             final highlights = snapshot.data!;
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(8.0),
-              itemCount: highlights.length,
-              itemBuilder: (context, index) {
-                final highlight = highlights[index];
-                // Handle the rating field gracefully (if reviews exist)
-                final rating = (highlight['reviews'] != null && highlight['reviews'].isNotEmpty)
-                    ? highlight['reviews'][0]['rating']
-                    : 0.0;
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenSize.width * 0.03),
+              child: GridView.builder(
+                padding: EdgeInsets.symmetric(vertical: screenSize.height * 0.02),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: (screenSize.width > 600) ? 3 : 2, // Responsive grid
+                  crossAxisSpacing: screenSize.width * 0.03,
+                  mainAxisSpacing: screenSize.height * 0.02,
+                  childAspectRatio: 0.65, // Adjust child aspect ratio for responsive tiles
+                ),
+                itemCount: highlights.length,
+                itemBuilder: (context, index) {
+                  final highlight = highlights[index];
+                  final rating = (highlight['reviews'] != null && highlight['reviews'].isNotEmpty)
+                      ? highlight['reviews'][0]['rating']
+                      : 0.0;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: DestinationTile(
-                    width: 180,
-                    imageUrl: highlight['image'],
-                    title: highlight['name'],
-                    description: highlight['description'],
-                    price: highlight['price'],
-                    rating: rating,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LocationDetailScreen(
-                            documentId: highlight["id"],
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: screenSize.height * 0.01),
+                    child: DestinationTile(
+                      width: screenSize.width * 0.4, // Responsive width
+                      imageUrl: highlight['image'],
+                      title: highlight['name'],
+                      description: highlight['description'],
+                      price: highlight['price'],
+                      rating: rating,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LocationDetailScreen(
+                              documentId: highlight["id"],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             );
           }
         },

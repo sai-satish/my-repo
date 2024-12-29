@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trip_swift/login_screen.dart';
-import 'firebaseServices/users.dart';
-import 'sharedPreferences/userid.dart';
+import 'firebaseServices/users.dart'; // Make sure you have the correct path for this
+import 'sharedPreferences/userid.dart'; // Make sure you have the correct path for this
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -22,12 +22,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'status': '',
     'likedLocations': [],
   };
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
 
+  // Load user data from Firestore
   Future<void> _loadUserData() async {
     String? userId = await getUserId();
     if (userId != null) {
@@ -49,25 +51,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Show the edit profile dialog
   void _editProfile() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         TextEditingController nameController =
-            TextEditingController(text: userData['name']);
+        TextEditingController(text: userData['name']);
         TextEditingController emailController =
-            TextEditingController(text: userData['email']);
+        TextEditingController(text: userData['email']);
         TextEditingController phoneController =
-            TextEditingController(text: userData['phoneNo']);
+        TextEditingController(text: userData['phoneNo']);
         TextEditingController ageController =
-            TextEditingController(text: userData['age'].toString());
+        TextEditingController(text: userData['age'].toString());
         String gender = ['Male', 'Female', 'Other'].contains(userData['gender'])
             ? userData['gender']
             : 'Other'; // Default to 'Other'
 
         return Dialog(
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
@@ -94,9 +97,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     items: ['Male', 'Female', 'Other']
                         .map((gender) => DropdownMenuItem(
-                              value: gender,
-                              child: Text(gender),
-                            ))
+                      value: gender,
+                      child: Text(gender),
+                    ))
                         .toList(),
                     onChanged: (value) {
                       setState(() {
@@ -117,9 +120,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       ElevatedButton(
-                        // onPressed: () {
-                        //   Navigator.of(context).pop();
-                        // },
                         onPressed: () async {
                           String? userId = await getUserId();
                           await updateProfile(
@@ -157,6 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Build text field for the dialog
   Widget _buildTextField(TextEditingController controller, String labelText,
       {bool isNumber = false}) {
     return Padding(
@@ -172,6 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Logout function
   void _logout() {
     showDialog(
       context: context,
@@ -185,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async{
+              onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('isLoggedIn', false);
                 await prefs.remove('userId');
@@ -211,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text('Profile'),
         centerTitle: true,
         backgroundColor: Colors.blueAccent,
-        leading: IconButton(onPressed: () =>Navigator.of(context).pop(), icon: Icon(Icons.arrow_back)),
+        leading: IconButton(onPressed: () => Navigator.of(context).pop(), icon: Icon(Icons.arrow_back)),
         actions: [
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
@@ -223,7 +225,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: 'Logout',
             onPressed: _logout,
           ),
-
         ],
       ),
       body: Padding(
@@ -232,7 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             CircleAvatar(
               radius: 50,
-              backgroundImage: NetworkImage(userData['imageUrl']),
+              backgroundImage: NetworkImage(userData['imageUrl'] ?? 'https://example.com/default-avatar.png'),
             ),
             SizedBox(height: 16),
             Expanded(

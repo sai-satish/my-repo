@@ -6,8 +6,6 @@ class HighLightTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String price;
-  // final String openingTime;
-  // final String closingTime;
   final VoidCallback onTap;
 
   const HighLightTile({
@@ -17,17 +15,18 @@ class HighLightTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.price,
-    // required this.openingTime,
-    // required this.closingTime,
     required this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(right: 16.0),
+        margin: EdgeInsets.only(right: screenSize.width * 0.04), // Make margin responsive
         width: width,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12.0),
@@ -44,7 +43,7 @@ class HighLightTile extends StatelessWidget {
                   // Display image from network with loading spinner
                   Image.network(
                     imageUrl,
-                    height: 120,
+                    height: screenSize.height * 0.2, // Height adjusted to screen size
                     width: width,
                     fit: BoxFit.cover,
                     loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
@@ -66,13 +65,13 @@ class HighLightTile extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(screenSize.width * 0.02), // Padding adjusted for responsiveness
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -83,7 +82,7 @@ class HighLightTile extends StatelessWidget {
                   const SizedBox(height: 4.0),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.grey[400],
                       fontSize: 14,
                     ),
@@ -93,21 +92,14 @@ class HighLightTile extends StatelessWidget {
                   const SizedBox(height: 4.0),
                   Text(
                     price,
-                    style: const TextStyle(
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.blueAccent,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  // const SizedBox(height: 4.0),
-                  // Text(
-                  //   "Opening: $openingTime",
-                  //   style: TextStyle(color: Colors.grey[500]),
-                  // ),
-                  // Text(
-                  //   "Closing: $closingTime",
-                  //   style: TextStyle(color: Colors.grey[500]),
-                  // ),
                 ],
               ),
             ),

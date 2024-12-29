@@ -4,7 +4,6 @@ import "package:shared_preferences/shared_preferences.dart";
 import "package:trip_swift/authController/signin.dart";
 import 'package:trip_swift/authController/signup.dart';
 import "package:trip_swift/main_screen.dart";
-// import "home_page.dart";
 import "components/errorPopup.dart";
 import "firebaseServices/users.dart";
 import "sharedPreferences/userid.dart";

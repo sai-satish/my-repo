@@ -53,9 +53,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.deepPurpleAccent, Colors.blueAccent],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
+            colors: [Color(0xff07353E), Color(0xff131617)], // Dark gradient background
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
           ),
         ),
         child: Column(
@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF22DD85), // Primary color
                 letterSpacing: 2.0,
               ),
             ),
@@ -92,17 +92,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white70,
+                color: Color(0xFFBCA5ED), // Secondary color
               ),
             ),
 
             const SizedBox(height: 40),
 
-            // Animated Loading Indicator
-            // const CircularProgressIndicator(
-            //   color: Colors.white,
-            //   strokeWidth: 3.0,
-            // ),
+            // Loading Indicator (Optional, can be added later)
+            const CircularProgressIndicator(
+              color: Color(0xFF22DD85), // Primary color
+              strokeWidth: 3.0,
+            ),
           ],
         ),
       ),

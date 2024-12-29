@@ -28,21 +28,24 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Friends'),
-            Tab(text: 'Group Chats'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          FriendsTab(),
-          GroupChatsTab(),
+      body: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Friends'),
+              Tab(text: 'Group Chats'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                FriendsTab(),
+                GroupChatsTab(),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: PopupMenuButton<String>(
@@ -67,7 +70,8 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       ),
     );
   }
-  String _generateChatId(String currentUserEmail, String friendEmail){
+
+  String _generateChatId(String currentUserEmail, String friendEmail) {
     List<String> emails = [currentUserEmail, friendEmail]..sort();
     return '${emails[0]}-${emails[1]}';
   }
@@ -88,27 +92,22 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               if (friendController.text.isNotEmpty) {
                 String friendEmail = friendController.text.trim();
                 final prefs = await SharedPreferences.getInstance();
-                final String currentUserEmail =
-                    prefs.getString('currentUserEmail') ?? "";
+                final String currentUserEmail = prefs.getString('currentUserEmail') ?? "";
 
-                // Generate chat ID in sorted order
                 String chatId = _generateChatId(currentUserEmail, friendEmail);
 
-                // Check if friend exists
                 var userSnapshot = await FirebaseFirestore.instance
                     .collection('users')
                     .where('email', isEqualTo: friendEmail)
                     .get();
 
                 if (userSnapshot.docs.isNotEmpty) {
-                  // Check if the chat already exists
                   var chatDoc = await FirebaseFirestore.instance
                       .collection('chats')
                       .doc(chatId)
                       .get();
 
                   if (!chatDoc.exists) {
-                    // Create new chat
                     await FirebaseFirestore.instance
                         .collection('chats')
                         .doc(chatId)
@@ -120,9 +119,8 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     });
                   }
 
-                  Navigator.pop(context);
+                  Navigator.of(context).pop();
 
-                  // Navigate to chat interface
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -130,8 +128,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     ),
                   );
                 } else {
-                  // Show error if the email does not exist
-                  Navigator.pop(context);
+                  Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Email does not exist!')),
                   );
@@ -161,7 +158,6 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               String groupName = groupController.text.trim();
 
               if (groupName.isEmpty) {
-                // Show error if the group name is empty
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Group name cannot be empty.')),
                 );
@@ -169,36 +165,30 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               }
 
               try {
-                // Retrieve current user email
                 final prefs = await SharedPreferences.getInstance();
-                final String currentUserEmail =
-                    prefs.getString('currentUserEmail') ?? "";
+                final String currentUserEmail = prefs.getString('currentUserEmail') ?? "";
 
                 if (currentUserEmail.isEmpty) {
                   throw Exception('Failed to fetch current user email.');
                 }
 
-                // Generate unique group ID
-                DocumentReference groupRef =
-                FirebaseFirestore.instance.collection('groups').doc();
+                DocumentReference groupRef = FirebaseFirestore.instance.collection('groups').doc();
 
-                // Create group entry
                 await groupRef.set({
                   'id': groupRef.id,
                   'groupName': groupName,
                   'isGroup': true,
-                  'users': [currentUserEmail], // Members list
+                  'users': [currentUserEmail],
                   'timestamp': FieldValue.serverTimestamp(),
                 });
 
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
 
-                // Navigate to group chat interface
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ChatInterfaceScreen(
-                      chatId: groupRef.id, // Pass the group ID
+                      chatId: groupRef.id,
                       isGroup: true,
                     ),
                   ),
@@ -208,7 +198,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   const SnackBar(content: Text('Group created successfully!')),
                 );
               } catch (e) {
-                Navigator.pop(context); // Ensure the dialog closes even on error
+                Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Failed to create group: $e')),
                 );
@@ -231,6 +221,7 @@ class FriendsTab extends StatefulWidget {
 
 class _FriendsTabState extends State<FriendsTab> {
   late String currentUserEmail;
+  bool _isLoading = true; // Track loading state
 
   @override
   void initState() {
@@ -242,12 +233,13 @@ class _FriendsTabState extends State<FriendsTab> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       currentUserEmail = prefs.getString('currentUserEmail') ?? "";
+      _isLoading = false; // Once email is fetched, stop loading
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return currentUserEmail.isEmpty
+    return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -306,6 +298,7 @@ class GroupChatsTab extends StatefulWidget {
 
 class _GroupChatsTabState extends State<GroupChatsTab> {
   late String currentUserEmail;
+  bool _isLoading = true; // Track loading state
 
   @override
   void initState() {
@@ -317,12 +310,13 @@ class _GroupChatsTabState extends State<GroupChatsTab> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       currentUserEmail = prefs.getString('currentUserEmail') ?? "";
+      _isLoading = false; // Once email is fetched, stop loading
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return currentUserEmail.isEmpty
+    return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
