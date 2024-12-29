@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 from pydantic import BaseModel
 from typing import List
 from datetime import date
@@ -8,16 +9,20 @@ from phi.tools.serpapi_tools import SerpApiTools
 from phi.tools.duckduckgo import DuckDuckGo
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
 app = Flask(__name__)
 
+# Enable CORS for the app
+CORS(app)
+
 class TravelPreferences(BaseModel):
     destination: str
-    present_location: str
-    start_date: date
-    end_date: date
+#     present_location: str
+    start_date: str
+    end_date: str
     budget: str
     travel_styles: List[str]
 
@@ -55,8 +60,13 @@ class TravelAgent:
         )
 
     def generate_travel_plan(self, preferences: TravelPreferences) -> str:
+        date1 = datetime.strptime(preferences.start_date, "%b %d, %Y")
+        date2 = datetime.strptime(preferences.end_date, "%b %d, %Y")
+        date1_formatted = date1.strftime('%Y-%m-%d')
+        date2_formatted = date2.strftime('%Y-%m-%d')
+
         prompt = f"""Act as a Personalized Travel Expert
-You are a travel expert specializing in creating tailored, detailed travel plans. Design a comprehensive itinerary for a trip to {preferences.destination} spanning {preferences.end_date - preferences.start_date}.days days, starting on {preferences.start_date} and ending on {preferences.end_date}.
+You are a travel expert specializing in creating tailored, detailed travel plans. Design a comprehensive itinerary for a trip to {preferences.destination} spanning {date2 - date1}.days days, starting on {preferences.start_date} and ending on {preferences.end_date}.
 
 Traveler Preferences:
 Budget Level: {preferences.budget}
